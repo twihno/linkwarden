@@ -1,6 +1,5 @@
 import CenteredForm from "@/layouts/CenteredForm";
 import Link from "next/link";
-import React from "react";
 
 export default function EmailConfirmaion() {
   return (
