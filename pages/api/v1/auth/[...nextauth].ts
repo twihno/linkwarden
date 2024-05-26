@@ -1,28 +1,28 @@
 import { prisma } from "@/lib/api/db";
-import NextAuth from "next-auth/next";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { AuthOptions } from "next-auth";
-import bcrypt from "bcrypt";
-import EmailProvider from "next-auth/providers/email";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import bcrypt from "bcrypt";
+import type { NextApiRequest, NextApiResponse } from "next";
 import { Adapter } from "next-auth/adapters";
-import sendVerificationRequest from "@/lib/api/sendVerificationRequest";
+import NextAuth from "next-auth/next";
 import { Provider } from "next-auth/providers";
-import verifySubscription from "@/lib/api/verifySubscription";
 import FortyTwoProvider from "next-auth/providers/42-school";
 import AppleProvider from "next-auth/providers/apple";
 import AtlassianProvider from "next-auth/providers/atlassian";
 import Auth0Provider from "next-auth/providers/auth0";
 import AuthentikProvider from "next-auth/providers/authentik";
+import AzureAdProvider from "next-auth/providers/azure-ad";
+import AzureAdB2CProvider from "next-auth/providers/azure-ad-b2c";
 import BattleNetProvider, {
   BattleNetIssuer,
 } from "next-auth/providers/battlenet";
 import BoxProvider from "next-auth/providers/box";
 import CognitoProvider from "next-auth/providers/cognito";
 import CoinbaseProvider from "next-auth/providers/coinbase";
+import CredentialsProvider from "next-auth/providers/credentials";
 import DiscordProvider from "next-auth/providers/discord";
 import DropboxProvider from "next-auth/providers/dropbox";
 import DuendeIDS6Provider from "next-auth/providers/duende-identity-server6";
+import EmailProvider from "next-auth/providers/email";
 import EVEOnlineProvider from "next-auth/providers/eveonline";
 import FacebookProvider from "next-auth/providers/facebook";
 import FaceItProvider from "next-auth/providers/faceit";
@@ -65,7 +65,6 @@ import ZitadelProvider from "next-auth/providers/zitadel";
 import ZohoProvider from "next-auth/providers/zoho";
 import ZoomProvider from "next-auth/providers/zoom";
 import * as process from "process";
-import type { NextApiRequest, NextApiResponse } from "next";
 
 const emailEnabled =
   process.env.EMAIL_FROM && process.env.EMAIL_SERVER ? true : false;
@@ -256,6 +255,41 @@ if (process.env.NEXT_PUBLIC_AUTHENTIK_ENABLED === "true") {
           image: profile.picture,
         };
       },
+    })
+  );
+
+  const _linkAccount = adapter.linkAccount;
+  adapter.linkAccount = (account) => {
+    const { "not-before-policy": _, refresh_expires_in, ...data } = account;
+    return _linkAccount ? _linkAccount(data) : undefined;
+  };
+}
+
+// Azure AD B2C
+if (process.env.NEXT_PUBLIC_AZURE_AD_ENABLED === "true") {
+  providers.push(
+    AzureAdB2CProvider({
+      tenantId: process.env.AZURE_AD_B2C_TENANT_NAME,
+      clientId: process.env.AZURE_AD_B2C_CLIENT_ID!,
+      clientSecret: process.env.AZURE_AD_B2C_CLIENT_SECRET!,
+      primaryUserFlow: process.env.AZURE_AD_B2C_PRIMARY_USER_FLOW,
+      authorization: { params: { scope: "offline_access openid" } },
+    })
+  );
+
+  const _linkAccount = adapter.linkAccount;
+  adapter.linkAccount = (account) => {
+    const { "not-before-policy": _, refresh_expires_in, ...data } = account;
+    return _linkAccount ? _linkAccount(data) : undefined;
+  };
+
+// Azure AD
+if (process.env.NEXT_PUBLIC_AZURE_AD_ENABLED === "true") {
+  providers.push(
+    AzureAdProvider({
+      clientId: process.env.AZURE_AD_CLIENT_ID!,
+      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
+      tenantId: process.env.AZURE_AD_TENANT_ID,
     })
   );
 
